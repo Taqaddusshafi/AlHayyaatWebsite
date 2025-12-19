@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useState, useEffect, type JSX } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
+
 interface HomePageData {
   hero_title: string;
   hero_subtitle: string;
@@ -22,6 +23,7 @@ interface HomePageData {
   phone: string;
 }
 
+
 interface Feature {
   id: number;
   icon_name: string;
@@ -29,6 +31,7 @@ interface Feature {
   description: string;
   display_order: number;
 }
+
 
 interface Specialization {
   id: number;
@@ -39,6 +42,7 @@ interface Specialization {
   display_order: number;
 }
 
+
 // Icon mapping
 const iconMap: { [key: string]: JSX.Element } = {
   'award': <Award className="w-6 h-6" />,
@@ -48,8 +52,11 @@ const iconMap: { [key: string]: JSX.Element } = {
   'stethoscope': <Stethoscope className="w-8 h-8" />,
   'building2': <Building2 className="w-8 h-8" />,
   'microscope': <Microscope className="w-8 h-8" />,
-  'ambulance': <Ambulance className="w-8 h-8" />
+  'ambulance': <Ambulance className="w-8 h-8" />,
+  'laboratory': <Microscope className="w-8 h-8" />,
+  'emergency': <Ambulance className="w-8 h-8" />
 };
+
 
 export function Home() {
   const [pageData, setPageData] = useState<HomePageData>({
@@ -69,14 +76,17 @@ export function Home() {
     phone: '+123 456 7890'
   });
 
+
   const [features, setFeatures] = useState<Feature[]>([]);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     async function fetchHomeData() {
       try {
         setLoading(true);
+
 
         // Fetch home page settings
         const { data: homeData, error: homeError } = await supabase
@@ -84,6 +94,7 @@ export function Home() {
           .select('*')
           .eq('id', 1)
           .single();
+
 
         if (homeError && homeError.code !== 'PGRST116') {
           console.error('Error fetching home page data:', homeError);
@@ -106,6 +117,7 @@ export function Home() {
           });
         }
 
+
         // Fetch features
         const { data: featuresData, error: featuresError } = await supabase
           .from('home_features')
@@ -113,11 +125,13 @@ export function Home() {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
+
         if (featuresError) {
           console.error('Error fetching features:', featuresError);
         } else if (featuresData) {
           setFeatures(featuresData);
         }
+
 
         // Fetch specializations
         const { data: specsData, error: specsError } = await supabase
@@ -125,6 +139,7 @@ export function Home() {
           .select('*')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
+
 
         if (specsError) {
           console.error('Error fetching specializations:', specsError);
@@ -138,8 +153,10 @@ export function Home() {
       }
     }
 
+
     fetchHomeData();
   }, []);
+
 
   if (loading) {
     return (
@@ -152,6 +169,7 @@ export function Home() {
     );
   }
 
+
   const stats = [
     { value: pageData.stat_doctors, label: 'Medical Experts', icon: <Users className="w-5 h-5" /> },
     { value: pageData.stat_specializations, label: 'Specializations', icon: <Stethoscope className="w-5 h-5" /> },
@@ -159,12 +177,14 @@ export function Home() {
     { value: pageData.stat_emergency, label: 'Emergency Care', icon: <Clock className="w-5 h-5" /> }
   ];
 
+
   const aboutBenefits = [
     'State-of-the-art medical equipment and facilities',
     'Board-certified specialists in multiple fields',
     'Comprehensive diagnostic and treatment services',
     'Patient-centered approach to healthcare'
   ];
+
 
   return (
     <div>
@@ -213,6 +233,7 @@ export function Home() {
                 </Link>
               </div>
 
+
               {/* Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((stat, index) => (
@@ -232,6 +253,7 @@ export function Home() {
                 ))}
               </div>
             </motion.div>
+
 
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -265,6 +287,7 @@ export function Home() {
         </div>
       </section>
 
+
       {/* Features Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -275,6 +298,7 @@ export function Home() {
               Committed to providing exceptional medical care with advanced technology and compassionate service
             </p>
           </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
@@ -298,6 +322,7 @@ export function Home() {
           </div>
         </div>
       </section>
+
 
       {/* About Section */}
       <section className="py-24 bg-gray-50">
@@ -339,6 +364,7 @@ export function Home() {
               </div>
             </motion.div>
 
+
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -364,6 +390,7 @@ export function Home() {
                 ))}
               </div>
 
+
               <Link
                 to="/services"
                 className="text-brand hover:opacity-80 inline-flex items-center gap-2 group"
@@ -376,6 +403,7 @@ export function Home() {
         </div>
       </section>
 
+
       {/* Specializations */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -386,6 +414,7 @@ export function Home() {
               Expert medical care across multiple specializations, all under one roof
             </p>
           </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {specializations.map((spec, index) => (
@@ -408,6 +437,7 @@ export function Home() {
             ))}
           </div>
 
+
           <div className="text-center mt-12">
             <Link
               to="/services"
@@ -419,6 +449,7 @@ export function Home() {
           </div>
         </div>
       </section>
+
 
       {/* CTA Section */}
       <section className="py-24 bg-white relative overflow-hidden">
