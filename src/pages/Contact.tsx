@@ -17,11 +17,6 @@ interface ContactInfo {
   maps_url: string;
 }
 
-interface Department {
-  id: number;
-  name: string;
-  display_order: number;
-}
 
 export function Contact() {
   const [formData, setFormData] = useState({
