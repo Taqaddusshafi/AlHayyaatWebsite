@@ -1,81 +1,95 @@
 import { Heart, Stethoscope, Baby, Bone, Brain, Eye, Ear, TestTube, Pill, Ambulance, Activity, Building2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useState, useEffect, type JSX } from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+interface Service {
+  id: number;
+  icon_name: string;
+  title: string;
+  description: string;
+  features: string[];
+  is_active: boolean;
+  display_order: number;
+}
+
+// Icon mapping object
+const iconMap: { [key: string]: JSX.Element } = {
+  'stethoscope': <Stethoscope className="w-8 h-8" />,
+  'baby': <Baby className="w-8 h-8" />,
+  'bone': <Bone className="w-8 h-8" />,
+  'brain': <Brain className="w-8 h-8" />,
+  'eye': <Eye className="w-8 h-8" />,
+  'ear': <Ear className="w-8 h-8" />,
+  'test-tube': <TestTube className="w-8 h-8" />,
+  'activity': <Activity className="w-8 h-8" />,
+  'pill': <Pill className="w-8 h-8" />,
+  'ambulance': <Ambulance className="w-8 h-8" />,
+  'heart': <Heart className="w-8 h-8" />,
+  'building2': <Building2 className="w-8 h-8" />
+};
 
 export function Services() {
-  const services = [
-    {
-      icon: <Stethoscope className="w-8 h-8" />,
-      title: 'Cardiology',
-      description: 'Comprehensive cardiovascular care including diagnosis, treatment, and prevention of heart diseases.',
-      features: ['ECG & Echocardiography', 'Cardiac Catheterization', 'Heart Surgery', 'Cardiac Rehabilitation']
-    },
-    {
-      icon: <Baby className="w-8 h-8" />,
-      title: 'Pediatrics',
-      description: 'Specialized healthcare for infants, children, and adolescents with experienced pediatricians.',
-      features: ['Newborn Care', 'Vaccinations', 'Growth Monitoring', 'Pediatric Surgery']
-    },
-    {
-      icon: <Bone className="w-8 h-8" />,
-      title: 'Orthopedics',
-      description: 'Treatment of musculoskeletal conditions including bones, joints, ligaments, and tendons.',
-      features: ['Joint Replacement', 'Sports Medicine', 'Fracture Care', 'Spine Surgery']
-    },
-    {
-      icon: <Brain className="w-8 h-8" />,
-      title: 'Neurology',
-      description: 'Expert care for disorders of the nervous system including brain and spinal cord conditions.',
-      features: ['Stroke Care', 'Epilepsy Treatment', 'Neurosurgery', 'Pain Management']
-    },
-    {
-      icon: <Eye className="w-8 h-8" />,
-      title: 'Ophthalmology',
-      description: 'Complete eye care services including diagnosis and treatment of eye diseases and vision problems.',
-      features: ['Cataract Surgery', 'LASIK', 'Retina Care', 'Glaucoma Treatment']
-    },
-    {
-      icon: <Ear className="w-8 h-8" />,
-      title: 'ENT',
-      description: 'Ear, nose, and throat care for a wide range of conditions affecting these vital areas.',
-      features: ['Hearing Tests', 'Sinus Treatment', 'Throat Surgery', 'Allergy Care']
-    },
-    {
-      icon: <TestTube className="w-8 h-8" />,
-      title: 'Laboratory Services',
-      description: 'State-of-the-art diagnostic laboratory with accurate and timely test results.',
-      features: ['Blood Tests', 'Pathology', 'Microbiology', 'Genetic Testing']
-    },
-    {
-      icon: <Activity className="w-8 h-8" />,
-      title: 'Radiology',
-      description: 'Advanced imaging services for accurate diagnosis using the latest technology.',
-      features: ['X-Ray', 'CT Scan', 'MRI', 'Ultrasound']
-    },
-    {
-      icon: <Pill className="w-8 h-8" />,
-      title: 'Pharmacy',
-      description: 'Well-stocked pharmacy with qualified pharmacists providing medication and health advice.',
-      features: ['Prescription Medicines', 'OTC Products', 'Health Supplements', 'Medication Counseling']
-    },
-    {
-      icon: <Ambulance className="w-8 h-8" />,
-      title: 'Emergency Care',
-      description: '24/7 emergency services with a dedicated team for immediate medical attention.',
-      features: ['Trauma Care', 'Critical Care', 'Ambulance Service', 'Emergency Surgery']
-    },
-    {
-      icon: <Heart className="w-8 h-8" />,
-      title: 'General Surgery',
-      description: 'Comprehensive surgical services with experienced surgeons and modern operating theaters.',
-      features: ['Laparoscopic Surgery', 'General Operations', 'Day Surgery', 'Post-operative Care']
-    },
-    {
-      icon: <Building2 className="w-8 h-8" />,
-      title: 'Obstetrics & Gynecology',
-      description: "Women's health services including maternity care and gynecological treatments.",
-      features: ['Prenatal Care', 'Delivery Services', 'Gynecology', 'Family Planning']
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [contactInfo, setContactInfo] = useState({
+    phone: '+123 456 7890',
+    email: 'info@alhayatmedical.com'
+  });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        
+        // Fetch services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('services')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError);
+        } else if (servicesData) {
+          setServices(servicesData);
+        }
+
+        // Fetch contact info from clinic_settings
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('clinic_settings')
+          .select('phone, email')
+          .eq('id', 1)
+          .single();
+
+        if (settingsError) {
+          console.error('Error fetching contact info:', settingsError);
+        } else if (settingsData) {
+          setContactInfo({
+            phone: settingsData.phone || '+123 456 7890',
+            email: settingsData.email || 'info@alhayatmedical.com'
+          });
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading our services...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -99,35 +113,41 @@ export function Services() {
       {/* Services Grid */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow"
-              >
-                <div className="w-16 h-16 bg-white text-brand rounded-lg flex items-center justify-center mb-6 border-2 border-brand">
-                  {service.icon}
-                </div>
-                <h3 className="text-2xl mb-3 text-gray-900">{service.title}</h3>
-                <p className="text-gray-600 mb-6">{service.description}</p>
-                <div className="pt-6 border-t border-gray-100">
-                  <div className="text-sm text-gray-500 mb-3">Services Include:</div>
-                  <ul className="space-y-2">
-                    {service.features.map((feature, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-brand rounded-full"></div>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {services.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No services available at the moment.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {services.map((service, index) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow"
+                >
+                  <div className="w-16 h-16 bg-white text-brand rounded-lg flex items-center justify-center mb-6 border-2 border-brand">
+                    {iconMap[service.icon_name] || <Stethoscope className="w-8 h-8" />}
+                  </div>
+                  <h3 className="text-2xl mb-3 text-gray-900">{service.title}</h3>
+                  <p className="text-gray-600 mb-6">{service.description}</p>
+                  <div className="pt-6 border-t border-gray-100">
+                    <div className="text-sm text-gray-500 mb-3">Services Include:</div>
+                    <ul className="space-y-2">
+                      {service.features.map((feature, idx) => (
+                        <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-brand rounded-full"></div>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -140,13 +160,13 @@ export function Services() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <a
-              href="tel:+1234567890"
+              href={`tel:${contactInfo.phone.replace(/\s/g, '')}`}
               className="bg-brand text-white px-8 py-4 rounded-md hover:opacity-90 transition-all"
             >
-              Call: +123 456 7890
+              Call: {contactInfo.phone}
             </a>
             <a
-              href="mailto:info@alhayatmedical.com"
+              href={`mailto:${contactInfo.email}`}
               className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-md hover:border-gray-400 transition-colors"
             >
               Email Us

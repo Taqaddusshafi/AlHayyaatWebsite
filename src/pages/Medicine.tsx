@@ -1,62 +1,110 @@
 import { Pill, ShoppingCart, Clock, Shield, Truck, CheckCircle } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { motion } from 'motion/react';
+import { useState, useEffect, type JSX } from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+interface PharmacySettings {
+  hero_title: string;
+  hero_description: string;
+  services_image_url: string;
+  phone: string;
+  email: string;
+}
+
+interface PharmacyFeature {
+  id: number;
+  icon_name: string;
+  title: string;
+  description: string;
+  display_order: number;
+}
+
+interface MedicineCategory {
+  id: number;
+  icon_name: string;
+  name: string;
+  description: string;
+  display_order: number;
+}
+
+interface PopularMedicine {
+  id: number;
+  category_name: string;
+  items: string[];
+  display_order: number;
+}
+
+interface PharmacyService {
+  id: number;
+  icon_name: string;
+  title: string;
+  description: string;
+  display_order: number;
+}
+
+const iconMap: { [key: string]: JSX.Element } = {
+  'clock': <Clock className="w-8 h-8" />,
+  'shield': <Shield className="w-8 h-8" />,
+  'truck': <Truck className="w-8 h-8" />,
+  'check-circle': <CheckCircle className="w-8 h-8" />,
+  'pill': <Pill className="w-6 h-6" />,
+  'shopping-cart': <ShoppingCart className="w-6 h-6" />,
+};
 
 export function Medicine() {
-  const categories = [
-    {
-      name: 'Prescription Medicines',
-      description: 'Wide range of prescribed medications available with doctor\'s prescription',
-      icon: <Pill className="w-6 h-6" />
-    },
-    {
-      name: 'Over-the-Counter',
-      description: 'Common medicines for everyday health needs without prescription',
-      icon: <ShoppingCart className="w-6 h-6" />
-    },
-    {
-      name: 'Vitamins & Supplements',
-      description: 'Quality vitamins, minerals, and dietary supplements',
-      icon: <CheckCircle className="w-6 h-6" />
-    },
-    {
-      name: 'First Aid & Care',
-      description: 'Essential first aid supplies and personal care products',
-      icon: <Shield className="w-6 h-6" />
-    }
-  ];
+  const [settings, setSettings] = useState<PharmacySettings>({
+    hero_title: 'Pharmacy & Medicine',
+    hero_description: 'Your trusted pharmacy providing quality medications and healthcare products with professional pharmaceutical care available 24/7.',
+    services_image_url: 'https://images.unsplash.com/photo-1596522016734-8e6136fe5cfa?w=1080',
+    phone: '+123 456 7890',
+    email: 'pharmacy@alhayatmedical.com'
+  });
 
-  const features = [
-    {
-      icon: <Clock className="w-8 h-8" />,
-      title: 'Open 24/7',
-      description: 'Our pharmacy is open round the clock for your convenience'
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: 'Quality Assured',
-      description: 'All medications sourced from certified manufacturers'
-    },
-    {
-      icon: <Truck className="w-8 h-8" />,
-      title: 'Home Delivery',
-      description: 'Free delivery for orders above minimum value'
-    },
-    {
-      icon: <CheckCircle className="w-8 h-8" />,
-      title: 'Expert Consultation',
-      description: 'Qualified pharmacists for medication counseling'
-    }
-  ];
+  const [features, setFeatures] = useState<PharmacyFeature[]>([]);
+  const [categories, setCategories] = useState<MedicineCategory[]>([]);
+  const [popularMedicines, setPopularMedicines] = useState<PopularMedicine[]>([]);
+  const [services, setServices] = useState<PharmacyService[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const popularMedicines = [
-    { name: 'Pain Relief', items: ['Paracetamol', 'Ibuprofen', 'Aspirin', 'Naproxen'] },
-    { name: 'Cold & Flu', items: ['Antihistamines', 'Decongestants', 'Cough Syrups', 'Throat Lozenges'] },
-    { name: 'Digestive Health', items: ['Antacids', 'Probiotics', 'Anti-diarrheal', 'Laxatives'] },
-    { name: 'Vitamins', items: ['Multivitamins', 'Vitamin D', 'Vitamin C', 'B-Complex'] },
-    { name: 'Heart Health', items: ['Blood Pressure', 'Cholesterol', 'Anticoagulants', 'Beta Blockers'] },
-    { name: 'Diabetes Care', items: ['Insulin', 'Metformin', 'Glucose Monitors', 'Test Strips'] }
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const [settingsData, featuresData, categoriesData, medicinesData, servicesData] = await Promise.all([
+        supabase.from('pharmacy_settings').select('*').eq('id', 1).single(),
+        supabase.from('pharmacy_features').select('*').eq('is_active', true).order('display_order'),
+        supabase.from('medicine_categories').select('*').eq('is_active', true).order('display_order'),
+        supabase.from('popular_medicines').select('*').eq('is_active', true).order('display_order'),
+        supabase.from('pharmacy_services').select('*').eq('is_active', true).order('display_order')
+      ]);
+
+      if (settingsData.data) setSettings(settingsData.data);
+      if (featuresData.data) setFeatures(featuresData.data);
+      if (categoriesData.data) setCategories(categoriesData.data);
+      if (medicinesData.data) setPopularMedicines(medicinesData.data);
+      if (servicesData.data) setServices(servicesData.data);
+    } catch (error) {
+      console.error('Error fetching pharmacy data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading pharmacy...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -69,9 +117,9 @@ export function Medicine() {
             className="text-center max-w-3xl mx-auto"
           >
             <div className="text-sm text-brand mb-4">PHARMACY SERVICES</div>
-            <h1 className="text-5xl mb-6 text-gray-900">Pharmacy & Medicine</h1>
+            <h1 className="text-5xl mb-6 text-gray-900">{settings.hero_title}</h1>
             <p className="text-xl text-gray-600 leading-relaxed mb-8">
-              Your trusted pharmacy providing quality medications and healthcare products with professional pharmaceutical care available 24/7.
+              {settings.hero_description}
             </p>
             <div className="inline-flex items-center gap-2 bg-white text-brand px-4 py-2 rounded-full border-2 border-brand">
               <Clock className="w-4 h-4" />
@@ -87,7 +135,7 @@ export function Medicine() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
-                key={index}
+                key={feature.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -95,7 +143,7 @@ export function Medicine() {
                 className="text-center"
               >
                 <div className="w-16 h-16 bg-white text-brand rounded-lg flex items-center justify-center mx-auto mb-4 border-2 border-brand">
-                  {feature.icon}
+                  {iconMap[feature.icon_name] || <Pill className="w-8 h-8" />}
                 </div>
                 <h3 className="text-lg mb-2 text-gray-900">{feature.title}</h3>
                 <p className="text-gray-600 text-sm">{feature.description}</p>
@@ -117,7 +165,7 @@ export function Medicine() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => (
               <motion.div
-                key={index}
+                key={category.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -125,7 +173,7 @@ export function Medicine() {
                 className="bg-white p-6 rounded-lg hover:shadow-lg transition-shadow"
               >
                 <div className="w-12 h-12 bg-white text-brand rounded-lg flex items-center justify-center mb-4 border-2 border-brand">
-                  {category.icon}
+                  {iconMap[category.icon_name] || <Pill className="w-6 h-6" />}
                 </div>
                 <h3 className="text-lg mb-2 text-gray-900">{category.name}</h3>
                 <p className="text-gray-600 text-sm">{category.description}</p>
@@ -147,14 +195,14 @@ export function Medicine() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {popularMedicines.map((category, index) => (
               <motion.div
-                key={index}
+                key={category.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
                 className="bg-white border border-gray-200 rounded-lg p-6"
               >
-                <h3 className="text-lg mb-4 text-brand">{category.name}</h3>
+                <h3 className="text-lg mb-4 text-brand">{category.category_name}</h3>
                 <ul className="space-y-2">
                   {category.items.map((item, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-gray-600 text-sm">
@@ -181,50 +229,17 @@ export function Medicine() {
               <div className="text-sm text-brand mb-2">PHARMACY SERVICES</div>
               <h2 className="text-4xl mb-6 text-gray-900">Professional Pharmaceutical Care</h2>
               <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-white text-brand rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-brand">
-                    <Pill className="w-6 h-6" />
+                {services.map((service) => (
+                  <div key={service.id} className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-white text-brand rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-brand">
+                      {iconMap[service.icon_name] || <Pill className="w-6 h-6" />}
+                    </div>
+                    <div>
+                      <h3 className="text-lg mb-1 text-gray-900">{service.title}</h3>
+                      <p className="text-gray-600 text-sm">{service.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg mb-1 text-gray-900">Prescription Filling</h3>
-                    <p className="text-gray-600 text-sm">
-                      Quick and accurate prescription filling with quality medications
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-white text-brand rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-brand">
-                    <CheckCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg mb-1 text-gray-900">Medication Counseling</h3>
-                    <p className="text-gray-600 text-sm">
-                      Professional advice on proper medication usage and interactions
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-white text-brand rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-brand">
-                    <Truck className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg mb-1 text-gray-900">Home Delivery</h3>
-                    <p className="text-gray-600 text-sm">
-                      Convenient home delivery service for your medications
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-white text-brand rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-brand">
-                    <Shield className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg mb-1 text-gray-900">Health Screening</h3>
-                    <p className="text-gray-600 text-sm">
-                      Blood pressure, glucose monitoring, and basic health checks
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </motion.div>
             <motion.div
@@ -234,7 +249,7 @@ export function Medicine() {
               className="relative"
             >
               <ImageWithFallback
-                src="https://images.unsplash.com/photo-1596522016734-8e6136fe5cfa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaGFybWFjeSUyMG1lZGljaW5lfGVufDF8fHx8MTc2NTU4MzM1MXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                src={settings.services_image_url}
                 alt="Pharmacy Services"
                 className="rounded-lg shadow-lg"
               />
@@ -252,13 +267,13 @@ export function Medicine() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <a
-              href="tel:+1234567890"
+              href={`tel:${settings.phone.replace(/\s/g, '')}`}
               className="bg-brand text-white px-8 py-4 rounded-md hover:opacity-90 transition-all"
             >
-              Call Pharmacy: +123 456 7890
+              Call Pharmacy: {settings.phone}
             </a>
             <a
-              href="mailto:pharmacy@alhayatmedical.com"
+              href={`mailto:${settings.email}`}
               className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-md hover:border-gray-400 transition-colors"
             >
               Email Pharmacy

@@ -2,63 +2,168 @@ import { Link } from 'react-router-dom';
 import { Heart, Users, Clock, Award, Stethoscope, Building2, Microscope, Ambulance, ArrowRight, Phone, Shield, Star } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { motion } from 'motion/react';
+import { useState, useEffect, type JSX } from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+interface HomePageData {
+  hero_title: string;
+  hero_subtitle: string;
+  hero_description: string;
+  hero_image_url: string;
+  about_title: string;
+  about_description1: string;
+  about_description2: string;
+  cta_title: string;
+  cta_description: string;
+  stat_doctors: string;
+  stat_specializations: string;
+  stat_patients: string;
+  stat_emergency: string;
+  phone: string;
+}
+
+interface Feature {
+  id: number;
+  icon_name: string;
+  title: string;
+  description: string;
+  display_order: number;
+}
+
+interface Specialization {
+  id: number;
+  icon_name: string;
+  name: string;
+  count: string;
+  color: string;
+  display_order: number;
+}
+
+// Icon mapping
+const iconMap: { [key: string]: JSX.Element } = {
+  'award': <Award className="w-6 h-6" />,
+  'users': <Users className="w-6 h-6" />,
+  'shield': <Shield className="w-6 h-6" />,
+  'heart': <Heart className="w-6 h-6" />,
+  'stethoscope': <Stethoscope className="w-8 h-8" />,
+  'building2': <Building2 className="w-8 h-8" />,
+  'microscope': <Microscope className="w-8 h-8" />,
+  'ambulance': <Ambulance className="w-8 h-8" />
+};
 
 export function Home() {
+  const [pageData, setPageData] = useState<HomePageData>({
+    hero_title: 'Your Health,',
+    hero_subtitle: 'Our Priority',
+    hero_description: 'Experience comprehensive healthcare services delivered with compassion, expertise, and cutting-edge medical technology.',
+    hero_image_url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1080',
+    about_title: 'Trusted Healthcare Partner',
+    about_description1: 'Al Hayat Medical Complex has been serving our community for over 15 years, providing comprehensive healthcare services with a commitment to excellence and compassion.',
+    about_description2: 'Our state-of-the-art facility combines advanced medical technology with the expertise of our board-certified physicians to deliver exceptional patient care across all specializations.',
+    cta_title: 'Ready to Take Control of Your Health?',
+    cta_description: 'Schedule an appointment with our experienced medical professionals today',
+    stat_doctors: '50+',
+    stat_specializations: '15+',
+    stat_patients: '10K+',
+    stat_emergency: '24/7',
+    phone: '+123 456 7890'
+  });
+
+  const [features, setFeatures] = useState<Feature[]>([]);
+  const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHomeData() {
+      try {
+        setLoading(true);
+
+        // Fetch home page settings
+        const { data: homeData, error: homeError } = await supabase
+          .from('home_page_settings')
+          .select('*')
+          .eq('id', 1)
+          .single();
+
+        if (homeError && homeError.code !== 'PGRST116') {
+          console.error('Error fetching home page data:', homeError);
+        } else if (homeData) {
+          setPageData({
+            hero_title: homeData.hero_title || pageData.hero_title,
+            hero_subtitle: homeData.hero_subtitle || pageData.hero_subtitle,
+            hero_description: homeData.hero_description || pageData.hero_description,
+            hero_image_url: homeData.hero_image_url || pageData.hero_image_url,
+            about_title: homeData.about_title || pageData.about_title,
+            about_description1: homeData.about_description1 || pageData.about_description1,
+            about_description2: homeData.about_description2 || pageData.about_description2,
+            cta_title: homeData.cta_title || pageData.cta_title,
+            cta_description: homeData.cta_description || pageData.cta_description,
+            stat_doctors: homeData.stat_doctors || pageData.stat_doctors,
+            stat_specializations: homeData.stat_specializations || pageData.stat_specializations,
+            stat_patients: homeData.stat_patients || pageData.stat_patients,
+            stat_emergency: homeData.stat_emergency || pageData.stat_emergency,
+            phone: homeData.phone || pageData.phone
+          });
+        }
+
+        // Fetch features
+        const { data: featuresData, error: featuresError } = await supabase
+          .from('home_features')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (featuresError) {
+          console.error('Error fetching features:', featuresError);
+        } else if (featuresData) {
+          setFeatures(featuresData);
+        }
+
+        // Fetch specializations
+        const { data: specsData, error: specsError } = await supabase
+          .from('home_specializations')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (specsError) {
+          console.error('Error fetching specializations:', specsError);
+        } else if (specsData) {
+          setSpecializations(specsData);
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchHomeData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const stats = [
-    { value: '50+', label: 'Medical Experts', icon: <Users className="w-5 h-5" /> },
-    { value: '15+', label: 'Specializations', icon: <Stethoscope className="w-5 h-5" /> },
-    { value: '10K+', label: 'Patients Served', icon: <Heart className="w-5 h-5" /> },
-    { value: '24/7', label: 'Emergency Care', icon: <Clock className="w-5 h-5" /> }
+    { value: pageData.stat_doctors, label: 'Medical Experts', icon: <Users className="w-5 h-5" /> },
+    { value: pageData.stat_specializations, label: 'Specializations', icon: <Stethoscope className="w-5 h-5" /> },
+    { value: pageData.stat_patients, label: 'Patients Served', icon: <Heart className="w-5 h-5" /> },
+    { value: pageData.stat_emergency, label: 'Emergency Care', icon: <Clock className="w-5 h-5" /> }
   ];
 
-  const features = [
-    {
-      icon: <Award className="w-6 h-6" />,
-      title: 'Accredited Excellence',
-      description: 'Internationally accredited facility meeting the highest standards of medical care and patient safety.'
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      title: 'Expert Medical Team',
-      description: 'Board-certified physicians with extensive experience across multiple medical specializations.'
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: 'Advanced Technology',
-      description: 'State-of-the-art medical equipment and cutting-edge diagnostic capabilities.'
-    },
-    {
-      icon: <Heart className="w-6 h-6" />,
-      title: 'Patient-Centered Care',
-      description: 'Personalized treatment plans focused on your individual health needs and wellbeing.'
-    }
-  ];
-
-  const specializations = [
-    { 
-      icon: <Stethoscope className="w-8 h-8" />, 
-      name: 'Cardiology', 
-      count: '8 Specialists',
-      color: 'from-red-500 to-rose-600'
-    },
-    { 
-      icon: <Building2 className="w-8 h-8" />, 
-      name: 'Orthopedics', 
-      count: '6 Specialists',
-      color: 'from-green-500 to-emerald-600'
-    },
-    { 
-      icon: <Microscope className="w-8 h-8" />, 
-      name: 'Laboratory', 
-      count: 'Advanced Diagnostics',
-      color: 'from-purple-500 to-violet-600'
-    },
-    { 
-      icon: <Ambulance className="w-8 h-8" />, 
-      name: 'Emergency', 
-      count: '24/7 Service',
-      color: 'from-orange-500 to-amber-600'
-    }
+  const aboutBenefits = [
+    'State-of-the-art medical equipment and facilities',
+    'Board-certified specialists in multiple fields',
+    'Comprehensive diagnostic and treatment services',
+    'Patient-centered approach to healthcare'
   ];
 
   return (
@@ -82,12 +187,12 @@ export function Home() {
               </div>
               
               <h1 className="text-6xl lg:text-7xl mb-6 text-gray-900 leading-tight">
-                Your Health,<br />
-                <span className="text-brand">Our Priority</span>
+                {pageData.hero_title}<br />
+                <span className="text-brand">{pageData.hero_subtitle}</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-                Experience comprehensive healthcare services delivered with compassion, expertise, and cutting-edge medical technology.
+                {pageData.hero_description}
               </p>
               
               <div className="flex flex-wrap gap-4 mb-12">
@@ -136,7 +241,7 @@ export function Home() {
             >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFsdGhjYXJlJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjU2ODg0Njh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                  src={pageData.hero_image_url}
                   alt="Medical Excellence"
                   className="w-full"
                 />
@@ -174,7 +279,7 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
-                key={index}
+                key={feature.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -183,7 +288,7 @@ export function Home() {
               >
                 <div className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-200 hover:border-brand hover:shadow-xl transition-all">
                   <div className="w-14 h-14 bg-white text-brand rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border-2 border-brand">
-                    {feature.icon}
+                    {iconMap[feature.icon_name] || <Award className="w-6 h-6" />}
                   </div>
                   <h3 className="text-xl mb-3 text-gray-900">{feature.title}</h3>
                   <p className="text-gray-600 leading-relaxed">{feature.description}</p>
@@ -208,7 +313,7 @@ export function Home() {
                 <div className="space-y-4">
                   <div className="aspect-square rounded-2xl overflow-hidden">
                     <ImageWithFallback
-                      src="https://images.unsplash.com/photo-1565647946321-a146ac24a220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwZG9jdG9yJTIwdGVhbXxlbnwxfHx8fDE3NjU2OTc0ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                      src="https://images.unsplash.com/photo-1565647946321-a146ac24a220?w=1080"
                       alt="Medical Team"
                       className="w-full h-full object-cover"
                     />
@@ -220,12 +325,12 @@ export function Home() {
                 </div>
                 <div className="space-y-4 mt-8">
                   <div className="bg-white rounded-2xl p-6 border-2 border-brand">
-                    <div className="text-4xl text-brand mb-2">24/7</div>
+                    <div className="text-4xl text-brand mb-2">{pageData.stat_emergency}</div>
                     <div className="text-gray-700">Emergency Care</div>
                   </div>
                   <div className="aspect-square rounded-2xl overflow-hidden">
                     <ImageWithFallback
-                      src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwY29uc3VsdGF0aW9ufGVufDF8fHx8MTc2NTYyMzc2OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                      src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1080"
                       alt="Medical Care"
                       className="w-full h-full object-cover"
                     />
@@ -240,21 +345,16 @@ export function Home() {
               viewport={{ once: true }}
             >
               <div className="text-sm text-brand mb-3 tracking-wide">ABOUT AL HAYAT MEDICAL</div>
-              <h2 className="text-4xl lg:text-5xl mb-6 text-gray-900">Trusted Healthcare Partner</h2>
+              <h2 className="text-4xl lg:text-5xl mb-6 text-gray-900">{pageData.about_title}</h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                Al Hayat Medical Complex has been serving our community for over 15 years, providing comprehensive healthcare services with a commitment to excellence and compassion.
+                {pageData.about_description1}
               </p>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Our state-of-the-art facility combines advanced medical technology with the expertise of our board-certified physicians to deliver exceptional patient care across all specializations.
+                {pageData.about_description2}
               </p>
               
               <div className="space-y-4 mb-8">
-                {[
-                  'State-of-the-art medical equipment and facilities',
-                  'Board-certified specialists in multiple fields',
-                  'Comprehensive diagnostic and treatment services',
-                  'Patient-centered approach to healthcare'
-                ].map((item, index) => (
+                {aboutBenefits.map((item, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border-2 border-brand">
                       <div className="w-2 h-2 bg-brand rounded-full"></div>
@@ -290,7 +390,7 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {specializations.map((spec, index) => (
               <motion.div
-                key={index}
+                key={spec.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -299,7 +399,7 @@ export function Home() {
               >
                 <div className="bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl transition-all">
                   <div className={`w-16 h-16 bg-gradient-to-br ${spec.color} rounded-xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform`}>
-                    {spec.icon}
+                    {iconMap[spec.icon_name] || <Stethoscope className="w-8 h-8" />}
                   </div>
                   <h3 className="text-xl mb-2 text-gray-900">{spec.name}</h3>
                   <p className="text-sm text-gray-600">{spec.count}</p>
@@ -327,9 +427,9 @@ export function Home() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-4xl lg:text-5xl mb-6 text-gray-900">Ready to Take Control of Your Health?</h2>
+            <h2 className="text-4xl lg:text-5xl mb-6 text-gray-900">{pageData.cta_title}</h2>
             <p className="text-xl text-gray-600 mb-10">
-              Schedule an appointment with our experienced medical professionals today
+              {pageData.cta_description}
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
@@ -340,10 +440,10 @@ export function Home() {
                 Book Appointment
               </Link>
               <a
-                href="tel:+1234567890"
+                href={`tel:${pageData.phone.replace(/\s/g, '')}`}
                 className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl hover:border-brand hover:text-brand transition-all"
               >
-                Call: +123 456 7890
+                Call: {pageData.phone}
               </a>
             </div>
           </div>

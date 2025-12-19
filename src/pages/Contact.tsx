@@ -1,6 +1,27 @@
-import { Phone, Mail, MapPin, Clock, Send, Calendar, MessageSquare } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Send, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+interface ContactInfo {
+  phone_primary: string;
+  phone_secondary: string;
+  email_primary: string;
+  email_secondary: string;
+  address_line1: string;
+  address_line2: string;
+  weekday_hours: string;
+  saturday_hours: string;
+  sunday_hours: string;
+  emergency_number: string;
+  maps_url: string;
+}
+
+interface Department {
+  id: number;
+  name: string;
+  display_order: number;
+}
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -12,10 +33,115 @@ export function Contact() {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    phone_primary: '+123 456 7890',
+    phone_secondary: '+123 456 7891',
+    email_primary: 'info@alhayatmedical.com',
+    email_secondary: 'appointments@alhayatmedical.com',
+    address_line1: '123 Medical Street',
+    address_line2: 'Healthcare City, HC 12345',
+    weekday_hours: '8:00 AM - 8:00 PM',
+    saturday_hours: '9:00 AM - 5:00 PM',
+    sunday_hours: '9:00 AM - 5:00 PM',
+    emergency_number: '911',
+    maps_url: 'https://maps.google.com'
+  });
+
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+
+        // Fetch contact info
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('clinic_settings')
+          .select('*')
+          .eq('id', 1)
+          .single();
+
+        if (settingsError) {
+          console.error('Error fetching contact info:', settingsError);
+        } else if (settingsData) {
+          setContactInfo({
+            phone_primary: settingsData.phone || '+123 456 7890',
+            phone_secondary: settingsData.phone_secondary || '+123 456 7891',
+            email_primary: settingsData.email || 'info@alhayatmedical.com',
+            email_secondary: settingsData.email_secondary || 'appointments@alhayatmedical.com',
+            address_line1: settingsData.address || '123 Medical Street',
+            address_line2: settingsData.address_line2 || 'Healthcare City, HC 12345',
+            weekday_hours: settingsData.weekday_hours || '8:00 AM - 8:00 PM',
+            saturday_hours: settingsData.saturday_hours || '9:00 AM - 5:00 PM',
+            sunday_hours: settingsData.sunday_hours || '9:00 AM - 5:00 PM',
+            emergency_number: settingsData.emergency_number || '911',
+            maps_url: settingsData.maps_url || 'https://maps.google.com'
+          });
+        }
+
+        // Fetch departments/services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('services')
+          .select('title, display_order')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (servicesError) {
+          console.error('Error fetching departments:', servicesError);
+        } else if (servicesData) {
+          setDepartments(servicesData.map(service => service.title));
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission
+    setSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            service: formData.service,
+            preferred_date: formData.date || null,
+            message: formData.message,
+            status: 'pending'
+          }
+        ]);
+
+      if (error) {
+        console.error('Error submitting form:', error);
+        alert('There was an error submitting your request. Please try again or call us directly.');
+      } else {
+        alert('Thank you! Your appointment request has been submitted. We will contact you shortly.');
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          service: '',
+          date: '',
+          message: ''
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      alert('There was an error submitting your request. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -25,42 +151,42 @@ export function Contact() {
     });
   };
 
-  const contactInfo = [
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading contact information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const contactCards = [
     {
       icon: <Phone className="w-6 h-6" />,
       title: 'Phone',
-      details: ['+123 456 7890', '+123 456 7891'],
-      description: 'Mon-Fri 8am-8pm, Sat-Sun 9am-5pm'
+      details: [contactInfo.phone_primary, contactInfo.phone_secondary],
+      description: `Mon-Fri ${contactInfo.weekday_hours}`
     },
     {
       icon: <Mail className="w-6 h-6" />,
       title: 'Email',
-      details: ['info@alhayatmedical.com', 'appointments@alhayatmedical.com'],
+      details: [contactInfo.email_primary, contactInfo.email_secondary],
       description: 'We\'ll respond within 24 hours'
     },
     {
       icon: <MapPin className="w-6 h-6" />,
       title: 'Location',
-      details: ['123 Medical Street', 'Healthcare City, HC 12345'],
+      details: [contactInfo.address_line1, contactInfo.address_line2],
       description: 'Free parking available'
     },
     {
       icon: <Clock className="w-6 h-6" />,
       title: 'Working Hours',
-      details: ['Mon-Fri: 8:00 AM - 8:00 PM', 'Sat-Sun: 9:00 AM - 5:00 PM'],
+      details: [`Mon-Fri: ${contactInfo.weekday_hours}`, `Sat-Sun: ${contactInfo.saturday_hours}`],
       description: '24/7 Emergency services'
     }
-  ];
-
-  const departments = [
-    'General Consultation',
-    'Cardiology',
-    'Pediatrics',
-    'Orthopedics',
-    'Neurology',
-    'Ophthalmology',
-    'Pharmacy',
-    'Emergency Services'
   ];
 
   return (
@@ -92,7 +218,7 @@ export function Contact() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {contactInfo.map((info, index) => (
+            {contactCards.map((info, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -217,11 +343,12 @@ export function Contact() {
 
                   <button
                     type="submit"
-                    className="w-full bg-brand text-white px-8 py-4 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg"
+                    disabled={submitting}
+                    className="w-full bg-brand text-white px-8 py-4 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ boxShadow: '0 10px 40px rgba(22, 163, 74, 0.2)' }}
                   >
                     <Send className="w-5 h-5" />
-                    Send Message
+                    {submitting ? 'Sending...' : 'Send Message'}
                   </button>
                 </form>
               </div>
@@ -238,18 +365,18 @@ export function Contact() {
               <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-8 text-white shadow-xl shadow-green-600/20">
                 <h3 className="text-2xl mb-6">Need Immediate Assistance?</h3>
                 <div className="space-y-4">
-                  <a href="tel:+1234567890" className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors">
+                  <a href={`tel:${contactInfo.phone_primary.replace(/\s/g, '')}`} className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors">
                     <Phone className="w-5 h-5" />
                     <div>
                       <div className="text-sm opacity-90">Call Us Now</div>
-                      <div className="text-lg">+123 456 7890</div>
+                      <div className="text-lg">{contactInfo.phone_primary}</div>
                     </div>
                   </a>
-                  <a href="mailto:info@alhayatmedical.com" className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors">
+                  <a href={`mailto:${contactInfo.email_primary}`} className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors">
                     <Mail className="w-5 h-5" />
                     <div>
                       <div className="text-sm opacity-90">Email Us</div>
-                      <div className="text-lg">info@alhayatmedical.com</div>
+                      <div className="text-lg">{contactInfo.email_primary}</div>
                     </div>
                   </a>
                 </div>
@@ -266,9 +393,9 @@ export function Contact() {
                     <p className="text-sm text-red-700 mb-3">
                       For life-threatening emergencies, please call our emergency hotline or visit our emergency department immediately.
                     </p>
-                    <a href="tel:911" className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                    <a href={`tel:${contactInfo.emergency_number}`} className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
                       <Phone className="w-4 h-4" />
-                      Emergency: 911
+                      Emergency: {contactInfo.emergency_number}
                     </a>
                   </div>
                 </div>
@@ -285,15 +412,15 @@ export function Contact() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between py-2 border-b border-gray-100">
                     <span className="text-gray-600">Monday - Friday</span>
-                    <span className="text-gray-900">8:00 AM - 8:00 PM</span>
+                    <span className="text-gray-900">{contactInfo.weekday_hours}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-gray-100">
                     <span className="text-gray-600">Saturday</span>
-                    <span className="text-gray-900">9:00 AM - 5:00 PM</span>
+                    <span className="text-gray-900">{contactInfo.saturday_hours}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-gray-100">
                     <span className="text-gray-600">Sunday</span>
-                    <span className="text-gray-900">9:00 AM - 5:00 PM</span>
+                    <span className="text-gray-900">{contactInfo.sunday_hours}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-gray-600">Emergency</span>
@@ -319,10 +446,10 @@ export function Contact() {
           <div className="bg-gray-100 rounded-2xl overflow-hidden h-96 flex items-center justify-center">
             <div className="text-center text-gray-500">
               <MapPin className="w-12 h-12 mx-auto mb-4 text-brand" />
-              <p className="text-lg">123 Medical Street</p>
-              <p>Healthcare City, HC 12345</p>
+              <p className="text-lg">{contactInfo.address_line1}</p>
+              <p>{contactInfo.address_line2}</p>
               <a 
-                href="https://maps.google.com" 
+                href={contactInfo.maps_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-block mt-4 text-brand hover:opacity-80"
