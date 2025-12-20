@@ -233,11 +233,17 @@ export function Footer() {
         <div className="border-t border-white/20 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-green-100">
             <p>&copy; {footerData.copyright_text}</p>
-            <div className="flex gap-6 text-sm">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
-            </div>
+            <p className="text-sm">
+              Developed by{' '}
+              <a 
+                href="https://hitechglobals.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-white hover:underline transition-colors"
+              >
+                hitechglobals.com
+              </a>
+            </p>
           </div>
         </div>
       </div>
