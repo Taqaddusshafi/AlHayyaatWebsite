@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';// Adjust path to your Supabase client
+import { supabase } from '../lib/supabaseClient';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -79,9 +79,21 @@ export function Navbar() {
                 <span className="hidden lg:inline">{clinicData.address}</span>
               </a>
             </div>
-            <div className="hidden md:flex items-center gap-2 text-sm">
-              <div className="w-2 h-2 bg-brand rounded-full animate-pulse"></div>
-              <span className="text-gray-700">24/7 Emergency Services</span>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 bg-brand rounded-full animate-pulse"></div>
+                <span className="text-gray-700">24/7 Emergency Services</span>
+              </div>
+              {/* Developer Credit - Subtle */}
+              <a 
+                href="https://hitechglobals.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-brand transition-colors hidden xl:block"
+                title="Designed & Developed by HiTech Globals"
+              >
+                by HiTech Globals
+              </a>
             </div>
           </div>
         </div>
@@ -160,6 +172,17 @@ export function Navbar() {
             >
               Book Appointment
             </Link>
+            {/* Developer Credit - Mobile */}
+            <div className="text-center mt-4 pt-4 border-t border-gray-100">
+              <a 
+                href="https://hitechglobals.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-gray-400 hover:text-brand transition-colors"
+              >
+                Designed & Developed by HiTech Globals
+              </a>
+            </div>
           </div>
         )}
       </div>
